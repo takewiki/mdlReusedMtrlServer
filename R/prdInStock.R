@@ -51,6 +51,8 @@ prdInStock_read <- function(file_name="data-raw/回料粉碎记录表模板.xlsx
     conn = tsda::sql_getConn(token = token)
     if(overWrite){
       #覆盖
+      #清除临时表
+      tsda::db_truncateTable(token = token,table_name = 'rds_prd_reusedMtrl_prdInStockInput')
       #写入临时表
       tsda::db_writeTable(conn = conn,table_name = 'rds_prd_reusedMtrl_prdInStockInput',r_object = data,append = T)
       #写入备份表
