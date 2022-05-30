@@ -74,7 +74,7 @@ and a.FPrdNumber = b.FPrdNumber")
       tsda::sql_update(conn,sql_del)
       #插入数据
       sql_ins <- paste0("insert into rds_prd_reusedMtrl_prdInStock
-select * from rds_prd_reusedMtrl_prdInStockInpu")
+select * from rds_prd_reusedMtrl_prdInStockInput")
       tsda::sql_update(conn,sql_ins)
       #清除临时表
       tsda::db_truncateTable(token = token,table_name = 'rds_prd_reusedMtrl_prdInStockInput')
