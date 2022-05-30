@@ -2,6 +2,7 @@
 #'
 #' @param file_name 文件名
 #' @param token 口令
+#' @param overWrite 是否覆盖
 #'
 #' @return 返回值
 #' @export
@@ -9,7 +10,8 @@
 #' @examples
 #' prdInStock_read()
 prdInStock_read <- function(file_name="data-raw/回料粉碎记录表模板.xlsx",
-                            token = '9B6F803F-9D37-41A2-BDA0-70A7179AF0F3') {
+                            token = '9B6F803F-9D37-41A2-BDA0-70A7179AF0F3',
+                            overWrite = FALSE) {
   data <- readxl::read_excel(file_name,
                      col_types = c("numeric", "text", "text",
                                    "date", "text", "text", "text", "text",
@@ -47,7 +49,45 @@ prdInStock_read <- function(file_name="data-raw/回料粉碎记录表模板.xlsx
                  'FNote' )
     data <- data[ ,col_name]
     conn = tsda::sql_getConn(token = token)
-    tsda::db_writeTable(conn = conn,table_name = 'rds_prd_reusedMtrl_prdInStock',r_object = data,append = T)
+    if(overWrite){
+      #覆盖
+      #写入临时表
+      tsda::db_writeTable(conn = conn,table_name = 'rds_prd_reusedMtrl_prdInStockInput',r_object = data,append = T)
+      #写入备份表
+      sql_bak <- paste0("insert into rds_prd_reusedMtrl_prdInStockDel
+select a.* from rds_prd_reusedMtrl_prdInStock a
+inner join rds_prd_reusedMtrl_prdInStockInput b
+on a.FCompanyName = b.FCompanyName
+and  a.FWorkshop =  b.FWorkshop
+and a.FDate =  b.FDate
+and a.FShiftName = b.FShiftName
+and a.FPrdNumber = b.FPrdNumber")
+      tsda::sql_update(conn,sql_bak)
+      #删除记录表
+      sql_del <- paste0("delete a  from rds_prd_reusedMtrl_prdInStock a
+inner join rds_prd_reusedMtrl_prdInStockInput b
+on a.FCompanyName = b.FCompanyName
+and  a.FWorkshop =  b.FWorkshop
+and a.FDate =  b.FDate
+and a.FShiftName = b.FShiftName
+and a.FPrdNumber = b.FPrdNumber")
+      tsda::sql_update(conn,sql_del)
+      #插入数据
+      sql_ins <- paste0("insert into rds_prd_reusedMtrl_prdInStock
+select * from rds_prd_reusedMtrl_prdInStockInpu")
+      tsda::sql_update(conn,sql_ins)
+      #清除临时表
+      tsda::db_truncateTable(token = token,table_name = 'rds_prd_reusedMtrl_prdInStockInput')
+
+    }else{
+      #新增
+      tsda::db_writeTable(conn = conn,table_name = 'rds_prd_reusedMtrl_prdInStock',r_object = data,append = T)
+
+
+    }
+
+
+
 
 
   }
@@ -175,6 +215,25 @@ prdInstockServer <- function(input,output,session,token='9B6F803F-9D37-41A2-BDA0
       tsui::pop_notice('请选择一个回料粉碎记录表EXCEL文件')
     }else{
       data = prdInStock_read(file_name = file_name,token = token)
+      #设置显示
+      tsui::run_dataTable2(id = 'dataviewprdInStock_query',data = data)
+      tsui::pop_notice('上传服务器成功！')
+    }
+
+
+
+
+
+
+  })
+
+  shiny::observeEvent(input$btnprdInStock_overwrite,{
+    file_name = var_fileprdInStock_upload()
+    print(file_name)
+    if(is.null(file_name)){
+      tsui::pop_notice('请选择一个回料粉碎记录表EXCEL文件')
+    }else{
+      data = prdInStock_read(file_name = file_name,token = token,overWrite = TRUE)
       #设置显示
       tsui::run_dataTable2(id = 'dataviewprdInStock_query',data = data)
       tsui::pop_notice('上传服务器成功！')

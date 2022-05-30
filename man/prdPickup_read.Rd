@@ -6,13 +6,16 @@
 \usage{
 prdPickup_read(
   file_name = "data-raw/回料使用记录表模板.xlsx",
-  token = "9B6F803F-9D37-41A2-BDA0-70A7179AF0F3"
+  token = "9B6F803F-9D37-41A2-BDA0-70A7179AF0F3",
+  overWrite = FALSE
 )
 }
 \arguments{
 \item{file_name}{文件名}
 
 \item{token}{口令}
+
+\item{overWrite}{是否重写}
 }
 \value{
 返回值

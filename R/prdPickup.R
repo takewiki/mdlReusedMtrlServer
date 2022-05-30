@@ -2,6 +2,7 @@
 #'
 #' @param file_name 文件名
 #' @param token 口令
+#' @param overWrite 是否重写
 #'
 #' @return 返回值
 #' @export
@@ -9,7 +10,8 @@
 #' @examples
 #' prdPickup_read()
 prdPickup_read <- function(file_name="data-raw/回料使用记录表模板.xlsx",
-                            token = '9B6F803F-9D37-41A2-BDA0-70A7179AF0F3') {
+                            token = '9B6F803F-9D37-41A2-BDA0-70A7179AF0F3',
+                            overWrite  = FALSE) {
   data <- readxl::read_excel(file_name,
                              col_types = c("numeric", "text", "text",
                                            "date", "text", "text", "text", "text",
@@ -47,7 +49,45 @@ prdPickup_read <- function(file_name="data-raw/回料使用记录表模板.xlsx"
                  'FNote' )
     data <- data[ ,col_name]
     conn = tsda::sql_getConn(token = token)
-    tsda::db_writeTable(conn = conn,table_name = 'rds_prd_reusedMtrl_prdPickup',r_object = data,append = T)
+    if(overWrite){
+      #覆盖
+      # 插入临时表
+      tsda::db_writeTable(conn = conn,table_name = 'rds_prd_reusedMtrl_prdPickupInput',r_object = data,append = T)
+      #备份表
+      sql_bak <- paste0("insert into rds_prd_reusedMtrl_prdPickupDel
+select a.* from rds_prd_reusedMtrl_prdPickup a
+inner join rds_prd_reusedMtrl_prdPickupInput b
+on a.FCompanyName = b.FCompanyName
+and  a.FWorkshop =  b.FWorkshop
+and a.FDate =  b.FDate
+and a.FShiftName = b.FShiftName
+and a.FPrdNumber = b.FPrdNumber")
+      tsda::sql_update(conn,sql_bak)
+      #删除表
+      sql_del <- paste0("
+delete a  from rds_prd_reusedMtrl_prdPickup a
+inner join rds_prd_reusedMtrl_prdPickupInput b
+on a.FCompanyName = b.FCompanyName
+and  a.FWorkshop =  b.FWorkshop
+and a.FDate =  b.FDate
+and a.FShiftName = b.FShiftName
+and a.FPrdNumber = b.FPrdNumber")
+      tsda::sql_update(conn,sql_del)
+      # 插入表
+      sql_ins <- paste0("
+insert into rds_prd_reusedMtrl_prdPickup
+select * from rds_prd_reusedMtrl_prdPickupInput
+")
+      tsda::sql_update(conn,sql_ins)
+      #清除表
+      tsda::db_truncateTable(token = token,table_name = 'rds_prd_reusedMtrl_prdPickupInput')
+    }else{
+      #新增
+      tsda::db_writeTable(conn = conn,table_name = 'rds_prd_reusedMtrl_prdPickup',r_object = data,append = T)
+
+    }
+
+
 
 
   }
@@ -188,6 +228,30 @@ prdPickupServer <- function(input,output,session,token='9B6F803F-9D37-41A2-BDA0-
 
 
   })
+
+
+
+  shiny::observeEvent(input$btnprdPickup_overwrite,{
+    file_name = var_fileprdPickup_upload()
+    print(file_name)
+    if(is.null(file_name)){
+      tsui::pop_notice('请选择一个回料领用记录表EXCEL文件')
+    }else{
+      data = prdPickup_read(file_name = file_name,token = token,overWrite = TRUE)
+      #设置显示
+      tsui::run_dataTable2(id = 'dataviewprdPickup_query',data = data)
+      tsui::pop_notice('上传服务器成功！')
+    }
+
+
+
+
+
+
+  })
+
+
+
 
 
 
