@@ -219,7 +219,7 @@ prdPickupServer <- function(input,output,session,token='9B6F803F-9D37-41A2-BDA0-
       data = prdPickup_read(file_name = file_name,token = token)
       #设置显示
       tsui::run_dataTable2(id = 'dataviewprdPickup_query',data = data)
-      tsui::pop_notice('上传服务器成功！')
+      tsui::pop_notice('数据新增至服务器！')
     }
 
 
@@ -240,7 +240,7 @@ prdPickupServer <- function(input,output,session,token='9B6F803F-9D37-41A2-BDA0-
       data = prdPickup_read(file_name = file_name,token = token,overWrite = TRUE)
       #设置显示
       tsui::run_dataTable2(id = 'dataviewprdPickup_query',data = data)
-      tsui::pop_notice('上传服务器成功！')
+      tsui::pop_notice('数据覆盖至服务器！')
     }
 
 

@@ -1,7 +1,7 @@
 Package: mdlReusedMtrlServer
 Type: Package
 Title: reused material server package.
-Version: 0.4.0
+Version: 0.4.1
 Author: hulilei
 Maintainer: hulilei <hulilei@takewiki.com.cn>
 Description: More about what it does (maybe more than one line)
